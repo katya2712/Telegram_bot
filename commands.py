@@ -1,3 +1,6 @@
+from tmdbv3api import Movie
+
+
 def hlp(arg):
     print('Помощь')
 
@@ -23,4 +26,11 @@ def recommendations(arg):
 
 
 def popular(arg):
-    print('Популярные фильмы: ')
+    movie = Movie()
+    popular = movie.popular()
+
+    for p in popular:
+        print(p.id)
+        print(p.title)
+        print(p.overview)
+        print(p.poster_path)
