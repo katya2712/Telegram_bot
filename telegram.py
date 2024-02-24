@@ -2,6 +2,7 @@ import telebot
 import logging
 
 import tmdb
+import views.cards
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
@@ -28,11 +29,19 @@ I am here to echo your kind words back to you. Just say anything nice and I'll s
 @bot.message_handler(commands=['popular', 'популярные'])
 def send_popular(message):
     popular = tmdb.popular()
+    # постер с шириной 500px
+    poster_w500_url = (tmdb.info().images['secure_base_url'] +
+                       tmdb.info().images['poster_sizes'][-3])
     for p in popular:
-        bot.send_message(chat_id=message.chat.id,
-                         text=f'''({p.title} ({p.release_date[:4]})
-{p.overview}
-Рейтинг: {round(p.vote_average * 10)}%''')
+        bot.send_photo(chat_id=message.chat.id,
+                       photo=poster_w500_url+p.poster_path,
+                       caption=views.cards.short(
+                           title=p.title,
+                           overview=p.overview,
+                           release_date=p.release_date[:4],
+                           vote_average=p.vote_average),
+                       parse_mode='HTML'
+                       )
 
 
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])

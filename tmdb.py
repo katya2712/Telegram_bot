@@ -1,4 +1,4 @@
-from tmdbv3api import TMDb, Movie
+from tmdbv3api import TMDb, Movie, Configuration
 
 tmdb = TMDb()
 
@@ -8,6 +8,10 @@ def init():
         tmdb_key = file.readline()
     tmdb.api_key = tmdb_key
     tmdb.language = 'ru'
+
+
+def info():
+    return Configuration().api_configuration()
 
 
 def movie_search(arg):
