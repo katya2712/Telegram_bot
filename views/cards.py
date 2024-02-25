@@ -1,5 +1,6 @@
-def full(title, overview, release_date, length, vote_average):
+def full(title, genres: list, overview, release_date, length, vote_average):
     return f'''<b>Название:</b> {title}
+<i>{','.join(genres)}</i>
 <b>Описание:</b>
 <i>{overview}</i>
 <b>Год выхода:</b> {release_date}

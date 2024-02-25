@@ -1,6 +1,8 @@
 import telebot
 import logging
 
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
 import tmdb
 import views.cards
 
@@ -32,14 +34,53 @@ def send_popular(message):
     # постер с шириной 500px
     poster_w500_url = (tmdb.info().images['secure_base_url'] +
                        tmdb.info().images['poster_sizes'][-3])
+
     for p in popular:
+        markup = InlineKeyboardMarkup()
+        details_button = InlineKeyboardButton("Подробнее", callback_data=f'details {p.id}')
+        markup.add(details_button)
         bot.send_photo(chat_id=message.chat.id,
-                       photo=poster_w500_url+p.poster_path,
+                       photo=poster_w500_url + p.poster_path,
                        caption=views.cards.short(
                            title=p.title,
                            overview=p.overview,
                            release_date=p.release_date[:4],
                            vote_average=p.vote_average),
+                       parse_mode='HTML',
+                       reply_markup=markup
+                       )
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_callback_query(call):
+    cmd = call.data.split()
+    command = cmd[0]
+    args = ' '.join(cmd[1:])
+    if command == 'details':
+        poster_w500_url = (tmdb.info().images['secure_base_url'] +
+                           tmdb.info().images['poster_sizes'][-3])
+        movie = tmdb.movie_details(args)
+        genres = [genres['name'] for genres in movie.genres]
+        # bot.edit_message_text(
+        #     text=views.cards.full(
+        #         title=movie.title,
+        #         overview=movie.overview,
+        #         release_date=movie.release_date[:4],
+        #         vote_average=movie.vote_average,
+        #         length=movie.runtime,
+        #         genres=genres),
+        #     chat_id=call.message.chat.id,
+        #     message_id=call.message.message_id,
+        #     parse_mode='HTML')
+        bot.send_photo(chat_id=call.message.chat.id,
+                       photo=poster_w500_url + movie.poster_path,
+                       caption=views.cards.full(
+                           title=movie.title,
+                           overview=movie.overview,
+                           release_date=movie.release_date[:4],
+                           vote_average=movie.vote_average,
+                           length=movie.runtime,
+                           genres=genres),
                        parse_mode='HTML'
                        )
 

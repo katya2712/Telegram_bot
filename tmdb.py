@@ -22,8 +22,8 @@ def mult_search(arg):
     pass
 
 
-def details(arg):
-    pass
+def movie_details(movie_id):
+    return Movie().details(movie_id)
 
 
 def similar(arg):
