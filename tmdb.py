@@ -1,6 +1,7 @@
-from tmdbv3api import TMDb, Movie, Configuration
+from tmdbv3api import TMDb, Movie, Configuration, Genre
 
 tmdb = TMDb()
+genres = []
 
 
 def init():
@@ -8,6 +9,8 @@ def init():
         tmdb_key = file.readline()
     tmdb.api_key = tmdb_key
     tmdb.language = 'ru'
+    global genres
+    genres = movie_genres()
 
 
 def info():
@@ -41,3 +44,7 @@ def popular():
     #     print(p.title)
     #     print(p.overview)
     #     print(p.poster_path)
+
+
+def movie_genres():
+    return Genre().movie_list()
