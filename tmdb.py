@@ -1,4 +1,5 @@
-from tmdbv3api import TMDb, Movie, Configuration, Genre
+from tmdbv3api import TMDb, Movie, Configuration, Genre, Search
+from tmdbv3api.objs import person
 
 tmdb = TMDb()
 genres = []
@@ -21,8 +22,23 @@ def movie_search(arg):
     print(f'Кино с названием {arg}')
 
 
+def tv_search(arg):
+    pass
+
+
 def mult_search(arg):
     pass
+
+
+def person_search(arg):
+    return Search().people(term=arg)
+
+
+# person = Person()
+# p = person.details(12)
+#
+# print(p.name)
+# print(p.biography)
 
 
 def movie_details(movie_id):

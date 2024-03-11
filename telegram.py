@@ -6,6 +6,7 @@ from telebot.util import quick_markup
 
 import tmdb
 import views.cards
+from utils import remove_first_word
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
@@ -105,6 +106,22 @@ def tv_selection(message):
     bot.send_message(message.chat.id,
                      f'''Выберете что-нибудь:''',
                      reply_markup=markup)
+
+
+@bot.message_handler(commands=['person', 'люди'])
+def send_person(message):
+    """Поиск людей"""
+    arg = remove_first_word(message.text)
+    persons = tmdb.person_search(arg)
+    if persons.total_results > 0:
+        text = ''
+        for person in persons:
+            text += f'id: {person.id}, имя: {person.name}\n'
+        bot.send_message(chat_id=message.chat.id,
+                         text=text)
+    else:
+        bot.send_message(chat_id=message.chat.id,
+                         text=f'По запросу "{arg}" ничего не найдено')
 
 
 # Список популярных фильмов на сегодня
