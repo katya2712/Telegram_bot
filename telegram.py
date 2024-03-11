@@ -2,6 +2,7 @@ import telebot
 import logging
 
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from telebot.util import quick_markup
 
 import tmdb
 import views.cards
@@ -132,13 +133,12 @@ def send_popular(message):
 
 @bot.message_handler(commands=['movie_genres', 'жанры_фильмов'])
 def send_genres(message):
-    markup = InlineKeyboardMarkup()
+    buttons = {}
     for genre in tmdb.genres:
-        button = InlineKeyboardButton(text=genre.name,
-                                      callback_data=f'genre_id {genre.id}')
-        markup.add(button)
+        buttons[genre.name] = {'callback_data': f'genre_id {genre.id}'}
+    markup = quick_markup(buttons, row_width=3)
     bot.send_message(chat_id=message.chat.id,
-                     text=f'Выберете жанр',
+                     text=f'Выберите жанр',
                      reply_markup=markup
                      )
 
@@ -163,8 +163,10 @@ def handle_callback_query(call):
             message_id=call.message.message_id,
             parse_mode='HTML')
     elif command == 'genre_id':
-        bot.send_message(chat_id=call.message.chat.id,
-                         text=f'id жанра - {args}')
+        bot.answer_callback_query(callback_query_id=call.id,
+                                  text=f'id жанра - {args}')
+        # bot.send_message(chat_id=call.message.chat.id,
+        #                  text=f'id жанра - {args}')
 
 
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
