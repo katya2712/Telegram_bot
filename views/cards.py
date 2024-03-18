@@ -14,3 +14,10 @@ def short(title, overview, release_date, vote_average):
 <i>{overview}</i>
 <b>Год выхода:</b> {release_date} 
 <b>Оценка:</b> {vote_average}'''
+
+
+def shorts(name, biography, date_of_birth):
+    return f'''<b>Имя:</b> {name}
+<b>Биография:</b>
+<i>{biography}</i>
+<b>Год рождения:</b> {date_of_birth}'''
