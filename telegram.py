@@ -5,13 +5,15 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 from telebot.util import quick_markup
 
 import tmdb
+import utils
 import views.cards
-from utils import remove_first_word
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
 
 search_type = 'movie'
+# genre_id = ''
+# people_id = ''
 
 with open('secrets/telegram.key') as file:
     API_TOKEN = file.readline()
@@ -111,7 +113,7 @@ def tv_selection(message):
 @bot.message_handler(commands=['person', 'люди'])
 def send_person(message):
     """Поиск людей"""
-    arg = remove_first_word(message.text)
+    arg = utils.remove_first_word(message.text)
     persons = tmdb.person_search(arg)
     if persons.total_results > 0:
         text = ''
@@ -138,7 +140,7 @@ def send_popular(message):
         markup.add(details_button)
         bot.send_photo(chat_id=message.chat.id,
                        photo=poster_w500_url + p.poster_path,
-                       caption=views.cards.short(
+                       caption=views.cards.movie_short(
                            title=p.title,
                            overview=p.overview,
                            release_date=p.release_date[:4],
@@ -152,12 +154,34 @@ def send_popular(message):
 def send_genres(message):
     buttons = {}
     for genre in tmdb.genres:
-        buttons[genre.name] = {'callback_data': f'genre_id {genre.id}'}
+        buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
     markup = quick_markup(buttons, row_width=3)
     bot.send_message(chat_id=message.chat.id,
                      text=f'Выберите жанр',
-                     reply_markup=markup
-                     )
+                     reply_markup=markup)
+
+
+@bot.message_handler(commands=['discover'])
+def send_discover_result(message):
+    discover = tmdb.discover(12, 85)
+    # постер с шириной 500px
+    poster_w500_url = (tmdb.info().images['secure_base_url'] +
+                       tmdb.info().images['poster_sizes'][-3])
+
+    for d in discover:
+        markup = InlineKeyboardMarkup()
+        details_button = InlineKeyboardButton("Подробнее", callback_data=f'details {d.id}')
+        markup.add(details_button)
+        bot.send_photo(chat_id=message.chat.id,
+                       photo=poster_w500_url + d.poster_path,
+                       caption=views.cards.movie_short(
+                           title=d.title,
+                           overview=d.overview,
+                           release_date=d.release_date[:4],
+                           vote_average=d.vote_average),
+                       parse_mode='HTML',
+                       reply_markup=markup
+                       )
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -169,7 +193,7 @@ def handle_callback_query(call):
         movie = tmdb.movie_details(args)
         genres = [genres['name'] for genres in movie.genres]
         bot.edit_message_caption(
-            caption=views.cards.full(
+            caption=views.cards.movie_full(
                 title=movie.title,
                 overview=movie.overview,
                 release_date=movie.release_date[:4],
@@ -180,10 +204,34 @@ def handle_callback_query(call):
             message_id=call.message.message_id,
             parse_mode='HTML')
     elif command == 'genre_id':
-        bot.answer_callback_query(callback_query_id=call.id,
-                                  text=f'id жанра - {args}')
-        # bot.send_message(chat_id=call.message.chat.id,
-        #                  text=f'id жанра - {args}')
+        args = args.split()
+        # global genre_id
+        utils.genre_id = args[0]
+        genre_name = ' '.join(args[1:])
+        bot.answer_callback_query(callback_query_id=call.id)
+        bot.edit_message_text(chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              text=f'Выбран жанр {genre_name}\nНапишите имя актёра или режисёра')
+    elif command == 'select_person':
+        discover = tmdb.discover(genre_id=utils.genre_id, people_id=args)
+        # постер с шириной 500px
+        poster_w500_url = (tmdb.info().images['secure_base_url'] +
+                           tmdb.info().images['poster_sizes'][-3])
+
+        for movie in discover:
+            markup = InlineKeyboardMarkup()
+            details_button = InlineKeyboardButton("Подробнее", callback_data=f'details {args}')
+            markup.add(details_button)
+            bot.send_photo(chat_id=call.message.chat.id,
+                           photo=poster_w500_url + movie.poster_path,
+                           caption=views.cards.movie_short(
+                               title=movie.title,
+                               overview=movie.overview,
+                               release_date=movie.release_date[:4],
+                               vote_average=movie.vote_average),
+                           parse_mode='HTML',
+                           reply_markup=markup
+                           )
 
 
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
@@ -204,5 +252,43 @@ def echo_message(message):
                 case _:
                     # использовать логер
                     print('Неизвестная команда')
+    elif utils.genre_id != '':
+        # Если выбран жанр, любое текствое сообщение трактуем как поиск персоны (актера или режисёра)
+        persons = tmdb.person_search(message.text)
+        if persons.total_results > 0:
+            # text = ''
+            for person in persons:
+                details = tmdb.person_details(person.id)
+                markup = InlineKeyboardMarkup()
+                select_button = InlineKeyboardButton("Выбрать", callback_data=f'select_person {person.id}')
+                markup.add(select_button)
+                bot.send_message(chat_id=message.chat.id,
+                                 text=views.cards.person_short(name=person.name,
+                                                               biography=details.biography,
+                                                               date_of_birth=details.birthday,
+                                                               ),
+                                 reply_markup=markup,
+                                 parse_mode='HTML')
+        # poster_w500_url = (tmdb.info().images['secure_base_url'] +
+        #                    tmdb.info().images['poster_sizes'][-3])
+        #
+        # for p in popular:
+        #     markup = InlineKeyboardMarkup()
+        #     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details {p.id}')
+        #     markup.add(details_button)
+        #     bot.send_photo(chat_id=message.chat.id,
+        #                    photo=poster_w500_url + p.poster_path,
+        #                    caption=views.cards.movie_short(
+        #                        title=p.title,
+        #                        overview=p.overview,
+        #                        release_date=p.release_date[:4],
+        #                        vote_average=p.vote_average),
+        #                    parse_mode='HTML',
+        #                    reply_markup=markup
+        #                    )
+        else:
+            bot.send_message(chat_id=message.chat.id,
+                             text=f'По запросу "{message}" ничего не найдено')
+
     else:
         bot.reply_to(message, message.text)

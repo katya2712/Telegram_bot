@@ -1,4 +1,4 @@
-from tmdbv3api import TMDb, Movie, Configuration, Genre, Search
+from tmdbv3api import TMDb, Movie, Configuration, Genre, Search, Discover, Person
 from tmdbv3api.objs import person
 
 tmdb = TMDb()
@@ -34,11 +34,8 @@ def person_search(arg):
     return Search().people(term=arg)
 
 
-# person = Person()
-# p = person.details(12)
-#
-# print(p.name)
-# print(p.biography)
+def person_details(arg):
+    return Person().details(arg)
 
 
 def movie_details(movie_id):
@@ -60,6 +57,15 @@ def popular():
     #     print(p.title)
     #     print(p.overview)
     #     print(p.poster_path)
+
+
+def discover(genre_id, people_id):
+    movies = Discover().discover_movies({
+        'with_genres': genre_id,
+        'with_people': people_id,
+        'sort_by': 'popularity.desc'
+    })
+    return movies
 
 
 def movie_genres():
