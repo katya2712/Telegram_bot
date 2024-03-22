@@ -12,8 +12,16 @@ logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
 
 search_type = 'movie'
-# genre_id = ''
-# people_id = ''
+
+
+def send_help(chat_id):
+    bot.send_message(chat_id=chat_id,
+                     text=f'''1️⃣Чтобы бот начал работать, нажмите кнопку: <b>start</b>.
+2️⃣Выберете, что вы хотите посмотреть и в зависмости от выбора нажмите кнопку: <b>фильм</b>, <b>мультфильм</b> или <b>сериал</b>.
+3️⃣После того как вы выбрали, что вы хотите посмотреть, вам будут предложены ещё три кнопки: жанр, актёры и режиссёр. Нажмите на любую из них и напишите любимый жанр, актёра или режиссёра. Затем бот предложит несколько фильмов, мультфильмов или сериалов, выберете один из них, запаситесь вкусняшками и наслаждайтесь просмотром!\U0001F497
+4️⃣Если вы хотите посмотреть просто какой-то популярный фильм, нажмите кнопку: топ фильмов.''',
+                     parse_mode='HTML')
+
 
 with open('secrets/telegram.key') as file:
     API_TOKEN = file.readline()
@@ -28,14 +36,15 @@ def run():
 @bot.message_handler(commands=['start'])
 def start(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = KeyboardButton('/\U0001F198Помощь')
-    item2 = KeyboardButton('/\U0001F3A5Фильм')
-    item3 = KeyboardButton('/\U0001F3ADМультфильм')
-    item4 = KeyboardButton('/\U0001F3ACСериал')
-    item5 = KeyboardButton('/\U0001F51DТоп_фильмов')
-
-    markup.add(item1, item2, item3, item4, item5)
-
+    # item1 = KeyboardButton('/\U0001F198Помощь')
+    # item2 = KeyboardButton('/\U0001F3A5Фильм')
+    # item3 = KeyboardButton('/\U0001F3ADМультфильм')
+    # item4 = KeyboardButton('/\U0001F3ACСериал')
+    # item5 = KeyboardButton('/\U0001F51DТоп_фильмов')
+    item1 = KeyboardButton('Поиск фильмов')
+    item2 = KeyboardButton('\U0001F51DТоп фильмов')
+    item5 = KeyboardButton('\U0001F198Помощь')
+    markup.add(item1, item2, item5)
     bot.send_message(message.chat.id,
                      f'''Привет,{message.from_user.first_name}!\U0001F44B
 Рады видеть тебя в нашем боте. Не будем долго болтать и приступим к выбору занятия на вечер!
@@ -46,11 +55,7 @@ def start(message):
 
 @bot.message_handler(commands=['help', '\U0001F198Помощь'])
 def movie_selection(message):
-    bot.send_message(message.chat.id,
-                     f'''1️⃣Чтобы бот начал работать, нажмите кнопку: <b>start</b>.
-2️⃣Выберете, что вы хотите посмотреть и в зависмости от выбора нажмите кнопку: <b>фильм</b>, <b>мультфильм</b> или <b>сериал</b>.
-3️⃣После того как вы выбрали, что вы хотите посмотреть, вам будут предложены ещё три кнопки: жанр, актёры и режиссёр. Нажмите на любую из них и напишите любимый жанр, актёра или режиссёра. Затем бот предложит несколько фильмов, мультфильмов или сериалов, выберете один из них, запаситесь вкусняшками и наслаждайтесь просмотром!\U0001F497
-4️⃣Если вы хотите посмотреть просто какой-то популярный фильм, нажмите кнопку: топ фильмов.''', parse_mode='HTML')
+    send_help(message.chat.id)
 
 
 @bot.message_handler(commands=['movie', '\U0001F3A5Фильм'])
@@ -127,7 +132,7 @@ def send_person(message):
 
 
 # Список популярных фильмов на сегодня
-@bot.message_handler(commands=['popular', '\U0001F51DТоп_фильмов'])
+@bot.message_handler(commands=['popular'])
 def send_popular(message):
     popular = tmdb.popular()
     # постер с шириной 500px
@@ -238,6 +243,7 @@ def handle_callback_query(call):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     if message.text[0] == '@':
+        # Удалить?
         txt = message.text.split()
         if txt[0] == '@' + bot.get_me().username:
             cmd = txt[1]
@@ -252,8 +258,14 @@ def echo_message(message):
                 case _:
                     # использовать логер
                     print('Неизвестная команда')
+    elif message.text == '\U0001F198Помощь':
+        # Вызов помощи из клавиатуры
+        send_help(message.chat.id)
+    elif message.text == 'Поиск фильмов':
+        send_genres(message)
     elif utils.genre_id != '':
         # Если выбран жанр, любое текствое сообщение трактуем как поиск персоны (актера или режисёра)
+        # Выполняется если не обнаружена другая команда
         persons = tmdb.person_search(message.text)
         if persons.total_results > 0:
             # text = ''
@@ -288,7 +300,8 @@ def echo_message(message):
         #                    )
         else:
             bot.send_message(chat_id=message.chat.id,
-                             text=f'По запросу "{message}" ничего не найдено')
+                             text=f'По запросу "{message.text}" ничего не найдено')
 
     else:
+        # доделать обработчик неизвестных команд
         bot.reply_to(message, message.text)
