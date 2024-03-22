@@ -263,6 +263,8 @@ def echo_message(message):
         send_help(message.chat.id)
     elif message.text == 'Поиск фильмов':
         send_genres(message)
+    elif message.text == '\U0001F51DТоп фильмов':
+        send_popular(message)
     elif utils.genre_id != '':
         # Если выбран жанр, любое текствое сообщение трактуем как поиск персоны (актера или режисёра)
         # Выполняется если не обнаружена другая команда
