@@ -17,10 +17,9 @@ search_type = 'movie'
 def send_help(chat_id):
     bot.send_message(chat_id=chat_id,
                      text=f'''1️⃣Чтобы бот начал работать, нажмите кнопку: <b>start</b>.
-2️⃣Выберете, что вы хотите посмотреть и в зависмости от выбора нажмите кнопку: <b>фильм</b>, <b>мультфильм</b> или <b>сериал</b>.
-3️⃣После того как вы выбрали, что вы хотите посмотреть, вам будут предложены ещё три кнопки: жанр, актёры и режиссёр. Нажмите на любую из них и напишите любимый жанр, актёра или режиссёра. Затем бот предложит несколько фильмов, мультфильмов или сериалов, выберете один из них, запаситесь вкусняшками и наслаждайтесь просмотром!\U0001F497
-4️⃣Если вы хотите посмотреть просто какой-то популярный фильм, нажмите кнопку: топ фильмов.''',
-                     parse_mode='HTML')
+2️⃣Выберите, что вы хотите посмотреть и в зависмости от выбора нажмите кнопку: <b>фильм</b>, <b>мультфильм</b> или <b>сериал</b>.
+3️⃣После того, как вы выбрали, что вы хотите посмотреть, вам будут предложены ещё две кнопки: <b>жанр</b> и <b>люди</b> (при нажатии на кнопку <b>жанр</b> - вы сможете выбрать жанр, а при нажатии кнопки <b>люди</b> - вы сможете выбрать актёра или режиссёра). Нажмите на любую из них и напишите любимый <b>жанр</b> или имя и фамилию <b>актёра</b> или <b>режиссёра</b>.Также, вы можете выбрать сразу пару критериев. Например, сначала выбрать <b>жанр</b>, а потом <b>актёра</b>,  и тогда при выборе фильма или сериала бот учтёт и то и то. Затем, бот предложит несколько <b>фильмов</b>, <b>мультфильмов</b> или <b>сериалов</b>, с выбранными вами критериями, выберите один из них, запаситесь вкусняшками и наслаждайтесь просмотром!\U0001F497
+4️⃣Если вы хотите посмотреть просто какой-то популярный фильм, нажмите кнопку: <b>топ фильмов</b>.''', parse_mode='HTML')
 
 
 with open('secrets/telegram.key') as file:
@@ -41,7 +40,7 @@ def start(message):
     # item3 = KeyboardButton('/\U0001F3ADМультфильм')
     # item4 = KeyboardButton('/\U0001F3ACСериал')
     # item5 = KeyboardButton('/\U0001F51DТоп_фильмов')
-    item1 = KeyboardButton('Поиск фильмов')
+    item1 = KeyboardButton('\U0001F3A5Фильм')
     item2 = KeyboardButton('\U0001F51DТоп фильмов')
     item5 = KeyboardButton('\U0001F198Помощь')
     markup.add(item1, item2, item5)
@@ -56,6 +55,11 @@ def start(message):
 @bot.message_handler(commands=['help', '\U0001F198Помощь'])
 def movie_selection(message):
     send_help(message.chat.id)
+    bot.send_message(message.chat.id,
+                     f'''1️⃣Чтобы бот начал работать, нажмите кнопку: <b>start</b>.
+2️⃣Выберите, что вы хотите посмотреть и в зависмости от выбора нажмите кнопку: <b>фильм</b>, <b>мультфильм</b> или <b>сериал</b>.
+3️⃣После того, как вы выбрали, что вы хотите посмотреть, вам будут предложены ещё три кнопки: <b>жанр</b>, <b>актёр</b> и <b>режиссёр</b>. Нажмите на любую из них и напишите любимый <b>жанр</b>, <b>актёра</b> или <b>режиссёра</b>.Также, вы можете выбрать сразу пару критериев. Например, сначала выбрать <b>жанр</b>, а потом <b>актёра</b>,  и тогда при выборе фильма или сериала бот учтёт и то и то. Затем, бот предложит несколько <b>фильмов</b>, <b>мультфильмов</b> или <b>сериалов</b>, с выбранными вами критериями, выберите один из них, запаситесь вкусняшками и наслаждайтесь просмотром!\U0001F497
+4️⃣Если вы хотите посмотреть просто какой-то популярный фильм, нажмите кнопку: <b>топ фильмов</b>.''', parse_mode='HTML')
 
 
 @bot.message_handler(commands=['movie', '\U0001F3A5Фильм'])
@@ -73,7 +77,7 @@ def movie_selection(message):
     markup.add(item1, item2, item3)
 
     bot.send_message(message.chat.id,
-                     f'''Выберете что-нибудь:''',
+                     f'''Выбирай\U0001F447\U0001F447\U0001F447:''',
                      reply_markup=markup)
 
 
@@ -90,7 +94,7 @@ def mult_selection(message):
     markup.add(item1, item3)
 
     bot.send_message(message.chat.id,
-                     f'''Выберете что-нибудь:''',
+                     f'''Выбирай\U0001F447\U0001F447\U0001F447:''',
                      reply_markup=markup)
 
 
@@ -111,7 +115,7 @@ def tv_selection(message):
     markup.add(item1, item2, item3)
 
     bot.send_message(message.chat.id,
-                     f'''Выберете что-нибудь:''',
+                     f'''Выбирай\U0001F447\U0001F447\U0001F447:''',
                      reply_markup=markup)
 
 
@@ -128,7 +132,7 @@ def send_person(message):
                          text=text)
     else:
         bot.send_message(chat_id=message.chat.id,
-                         text=f'По запросу "{arg}" ничего не найдено')
+                         text=f'По запросу "{arg}" ничего не найдено, введите заново имя и фамилию актёра или режиссёра. ')
 
 
 # Список популярных фильмов на сегодня
@@ -162,7 +166,8 @@ def send_genres(message):
         buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
     markup = quick_markup(buttons, row_width=3)
     bot.send_message(chat_id=message.chat.id,
-                     text=f'Выберите жанр',
+                     text=f'<b>Выберите жанр:</b>',
+                     parse_mode='HTML',
                      reply_markup=markup)
 
 
@@ -216,7 +221,7 @@ def handle_callback_query(call):
         bot.answer_callback_query(callback_query_id=call.id)
         bot.edit_message_text(chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              text=f'Выбран жанр {genre_name}\nНапишите имя актёра или режисёра')
+                              text=f'Выбран жанр {genre_name}\n.Напишите имя актёра или режисёра')
     elif command == 'select_person':
         discover = tmdb.discover(genre_id=utils.genre_id, people_id=args)
         # постер с шириной 500px
@@ -261,7 +266,7 @@ def echo_message(message):
     elif message.text == '\U0001F198Помощь':
         # Вызов помощи из клавиатуры
         send_help(message.chat.id)
-    elif message.text == 'Поиск фильмов':
+    elif message.text == '\U0001F3A5Фильм':
         send_genres(message)
     elif message.text == '\U0001F51DТоп фильмов':
         send_popular(message)
@@ -302,7 +307,7 @@ def echo_message(message):
         #                    )
         else:
             bot.send_message(chat_id=message.chat.id,
-                             text=f'По запросу "{message.text}" ничего не найдено')
+                             text=f'По запросу "{message.text}" ничего не найдено, введите заново имя и фамилию актёра или режиссёра.')
 
     else:
         # доделать обработчик неизвестных команд
