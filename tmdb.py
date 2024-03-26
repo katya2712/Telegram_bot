@@ -4,6 +4,8 @@ from tmdbv3api.objs import person
 tmdb = TMDb()
 genres = []
 
+poster_w500_url = ''
+
 
 def init():
     with open('secrets/tmdb.key') as file:
@@ -12,6 +14,9 @@ def init():
     tmdb.language = 'ru'
     global genres
     genres = movie_genres()
+    global poster_w500_url
+    poster_w500_url = (info().images['secure_base_url'] +
+                       info().images['poster_sizes'][-3])
 
 
 def info():
