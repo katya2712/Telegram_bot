@@ -4,6 +4,7 @@ from tmdbv3api.objs import person
 tmdb = TMDb()
 genres = []
 
+# постер с шириной 500px
 poster_w500_url = ''
 
 
@@ -31,10 +32,6 @@ def tv_search(arg):
     pass
 
 
-def mult_search(arg):
-    pass
-
-
 def person_search(arg):
     return Search().people(term=arg)
 
@@ -56,15 +53,12 @@ def recommendations(arg):
 
 
 def popular():
+    """Список популярных фильмов"""
     return Movie().popular()
-    # for p in popular:
-    #     print(p.id)
-    #     print(p.title)
-    #     print(p.overview)
-    #     print(p.poster_path)
 
 
 def discover(genre_id, people_id):
+    """Поиск фильмов по заданному жанру и персоне"""
     movies = Discover().discover_movies({
         'with_genres': genre_id,
         'with_people': people_id,
@@ -74,4 +68,5 @@ def discover(genre_id, people_id):
 
 
 def movie_genres():
+    """Список жанров фильмов"""
     return Genre().movie_list()
