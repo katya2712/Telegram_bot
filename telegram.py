@@ -6,13 +6,20 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 from telebot.util import quick_markup
 
 import tmdb
-import variables
 import views.cards
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
 
-discover = []
+# ### Структура хранения состояния поиска для каждого пользователя
+# {
+# chat_id: {
+# 	'discover': [],
+# 	'genre_id': '',
+# 	'current_discover_id': 0
+# 	}
+users = {}
+
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
 next_button = InlineKeyboardButton("next", callback_data=f'next')
 
@@ -30,6 +37,9 @@ def run():
 # Обработчик '/start'
 @bot.message_handler(commands=['start', 'старт'])
 def start(message):
+    chat_id = message.chat.id
+    global users
+    users[chat_id] = {}
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = KeyboardButton('\U0001F3A5Фильм')
     item2 = KeyboardButton('\U0001F51DТоп фильмов')
@@ -45,7 +55,7 @@ def start(message):
 
 # Обработчик '/help'
 @bot.message_handler(commands=['help', 'помощь'])
-def movie_selection(message):
+def send_help_handler(message):
     send_help(message.chat.id)
 
 
@@ -80,7 +90,22 @@ def help_handler(message):
 # Поиск фильмов
 @bot.message_handler(func=lambda message: message.text == '\U0001F3A5Фильм')
 def send_genres_handler(message):
-    send_genres(message.chat.id)
+    """Отправляет пользователю список доступных жанров фильмов"""
+    chat_id = message.chat.id
+    # создаем словарь для каждого пользователя
+    users[chat_id] = {}
+    users[chat_id]['discover'] = []
+    users[chat_id]['genre_id'] = ''
+    users[chat_id]['current_discover_id'] = 0
+
+    buttons = {}
+    for genre in tmdb.genres:
+        buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
+    markup = quick_markup(buttons, row_width=3)
+    bot.send_message(chat_id=chat_id,
+                     text=f'<b>Выберите жанр:</b>',
+                     parse_mode='HTML',
+                     reply_markup=markup)
 
 
 # Список популярных фильмов
@@ -89,7 +114,7 @@ def send_popular_handler(message):
     send_popular(message.chat.id)
 
 
-@bot.message_handler(func=lambda message: variables.genre_id != '')
+@bot.message_handler(func=lambda message: users[message.chat.id]['genre_id'] != '')
 def send_person_handler(message):
     # Если выбран жанр, любое текстовое сообщение трактуем как поиск персоны (актера или режиссёра)
     # Выполняется если не обнаружена другая команда
@@ -127,7 +152,7 @@ def echo_message(message):
 # TODO воспользоваться возможностями лямбда функции декоратора
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback_query(call):
-    global discover
+    chat_id = call.message.chat.id
     cmd = call.data.split()
     command = cmd[0]
     args = ' '.join(cmd[1:])
@@ -147,17 +172,18 @@ def handle_callback_query(call):
             parse_mode='HTML')
     if command == 'details_from_discover':
         movie = tmdb.movie_details(args)
-        movie_count = len(discover)
+        movie_count = len(users[chat_id]['discover'])
         genres = [genres['name'] for genres in movie.genres]
         markup = InlineKeyboardMarkup()
 
         # добавляем кнопку "предыдущий", если фильм не первый
-        if variables.current_discover_id > 0:
+        if users[chat_id]['current_discover_id'] > 0:
             markup.add(prev_button)
 
         # добавляем кнопку "следующий", если фильм не последний
-        if variables.current_discover_id < movie_count - 1:
+        if users[chat_id]['current_discover_id'] < movie_count - 1:
             markup.add(next_button)
+
         bot.edit_message_caption(
             caption=views.cards.movie_full(
                 title=movie.title,
@@ -173,7 +199,8 @@ def handle_callback_query(call):
 
     elif command == 'genre_id':
         args = args.split()
-        variables.genre_id = args[0]
+        users[chat_id]['genre_id'] = args[0]
+        # variables.genre_id = args[0]
         genre_name = ' '.join(args[1:])
         bot.answer_callback_query(callback_query_id=call.id)
         bot.edit_message_text(chat_id=call.message.chat.id,
@@ -181,15 +208,22 @@ def handle_callback_query(call):
                               text=f'Выбран жанр {genre_name}\n.Напишите имя актёра или режиссёра')
 
     elif command == 'select_person':
-        discover = tmdb.discover(genre_id=variables.genre_id, people_id=args)
-        send_first_movie(call=call)
+        users[chat_id]['discover'] = tmdb.discover(genre_id=users[chat_id]['genre_id'], people_id=args)
+        bot.answer_callback_query(callback_query_id=call.id)
+        if users[chat_id]['discover']['total_results'] > 0:
+            send_first_movie(call=call)
+        else:
+            bot.send_message(chat_id=chat_id,
+                             text='По вашему запросу ничего не найдено. Пожалуйста, повторите поиск.')
 
     elif command == 'next':
-        variables.current_discover_id += 1
+        users[chat_id]['current_discover_id'] += 1
+        bot.answer_callback_query(callback_query_id=call.id)
         send_current_movie(call=call)
 
     elif command == 'prev':
-        variables.current_discover_id -= 1
+        users[chat_id]['current_discover_id'] -= 1
+        bot.answer_callback_query(callback_query_id=call.id)
         send_current_movie(call=call)
 
 
@@ -204,27 +238,19 @@ def send_help(chat_id):
                      parse_mode='HTML')
 
 
-def send_genres(chat_id):
-    """Отправляет пользователю список доступных жанров фильмов"""
-    buttons = {}
-    for genre in tmdb.genres:
-        buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
-    markup = quick_markup(buttons, row_width=3)
-    bot.send_message(chat_id=chat_id,
-                     text=f'<b>Выберите жанр:</b>',
-                     parse_mode='HTML',
-                     reply_markup=markup)
-
-
 def send_first_movie(call):
     """Отправка первого сообщения с результатом поиска фильмов"""
-    variables.current_discover_id = 0
-    movie = discover[0]
+    chat_id = call.message.chat.id
+    users[chat_id]['current_discover_id'] = 0
+    movie = users[chat_id]['discover'][0]
     message = call.message
     markup = InlineKeyboardMarkup()
     # TODO расставить кнопки в столбик
+
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
-    markup.add(next_button, details_button)
+    if users[chat_id]['discover']['total_results'] > 1:
+        markup.add(next_button)
+    markup.add(details_button)
     bot.send_photo(chat_id=message.chat.id,
                    photo=tmdb.poster_w500_url + movie.poster_path,
                    caption=views.cards.movie_short(
@@ -239,17 +265,18 @@ def send_first_movie(call):
 
 def send_current_movie(call):
     """Редактирование сообщения для показа другого фильма из поиска"""
-    movie_count = len(discover)
-    movie = discover[variables.current_discover_id]
+    chat_id = call.message.chat.id
+    movie_count = len(users[chat_id]['discover'])
+    movie = users[chat_id]['discover'][users[chat_id]['current_discover_id']]
     message = call.message
     markup = InlineKeyboardMarkup()
     # TODO Расставить кнопки next и prev в один ряд, а подробнее в другой ряд
     # добавляем кнопку "предыдущий", если фильм не первый
-    if variables.current_discover_id > 0:
+    if users[chat_id]['current_discover_id'] > 0:
         markup.add(prev_button)
 
     # добавляем кнопку "следующий", если фильм не последний
-    if variables.current_discover_id < movie_count - 1:
+    if users[chat_id]['current_discover_id'] < movie_count - 1:
         markup.add(next_button)
 
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
