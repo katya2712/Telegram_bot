@@ -245,7 +245,6 @@ def send_first_movie(call):
     movie = users[chat_id]['discover'][0]
     message = call.message
     markup = InlineKeyboardMarkup()
-    # TODO расставить кнопки в столбик
 
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
     if users[chat_id]['discover']['total_results'] > 1:
@@ -266,18 +265,12 @@ def send_first_movie(call):
 def send_current_movie(call):
     """Редактирование сообщения для показа другого фильма из поиска"""
     chat_id = call.message.chat.id
-    movie_count = len(users[chat_id]['discover'])
+    # movie_count = len(users[chat_id]['discover'])
     movie = users[chat_id]['discover'][users[chat_id]['current_discover_id']]
     message = call.message
-    markup = InlineKeyboardMarkup()
-    # TODO Расставить кнопки next и prev в один ряд, а подробнее в другой ряд
-    # добавляем кнопку "предыдущий", если фильм не первый
-    if users[chat_id]['current_discover_id'] > 0:
-        markup.add(prev_button)
-
-    # добавляем кнопку "следующий", если фильм не последний
-    if users[chat_id]['current_discover_id'] < movie_count - 1:
-        markup.add(next_button)
+    buttons = {'prev': {'callback_data': 'prev'},
+               'next': {'callback_data': 'next'}}
+    markup = quick_markup(buttons)
 
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
     markup.add(details_button)
