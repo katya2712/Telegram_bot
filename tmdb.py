@@ -6,6 +6,10 @@ genres = []
 
 # постер с шириной 500px
 poster_w500_url = ''
+profile_h632_url = ''
+
+poster_na_url = 'https://placehold.co/500x700.png?text=N/A'
+profile_na_url = 'https://placehold.co/421x632.png?text=N/A'
 
 
 def init():
@@ -18,6 +22,9 @@ def init():
     global poster_w500_url
     poster_w500_url = (info().images['secure_base_url'] +
                        info().images['poster_sizes'][-3])
+    global profile_h632_url
+    profile_h632_url = (info().images['secure_base_url'] +
+                        info().images['profile_sizes'][-2])
 
 
 def info():

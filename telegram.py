@@ -118,22 +118,33 @@ def send_popular_handler(message):
 def send_person_handler(message):
     # Если выбран жанр, любое текстовое сообщение трактуем как поиск персоны (актера или режиссёра)
     # Выполняется если не обнаружена другая команда
-    # TODO Фото актёра
     persons = tmdb.person_search(message.text)
     if persons.total_results > 0:
         # text = ''
         for person in persons:
+            if person.profile_path is not None and person.profile_path != '':
+                person_profile_picture = str(tmdb.profile_h632_url + person.profile_path)
+            else:
+                person_profile_picture = tmdb.profile_na_url
             details = tmdb.person_details(person.id)
             markup = InlineKeyboardMarkup()
             select_button = InlineKeyboardButton("Выбрать", callback_data=f'select_person {person.id}')
             markup.add(select_button)
-            bot.send_message(chat_id=message.chat.id,
-                             text=views.cards.person_short(name=person.name,
-                                                           biography=details.biography,
-                                                           date_of_birth=details.birthday,
-                                                           ),
-                             reply_markup=markup,
-                             parse_mode='HTML')
+            text = views.cards.person_short(name=person.name,
+                                            biography=details.biography,
+                                            date_of_birth=details.birthday,
+                                            )
+            print(text)
+            print(person_profile_picture)
+            bot.send_photo(chat_id=message.chat.id,
+                           photo=person_profile_picture,
+                           caption=views.cards.person_short(name=person.name,
+                                                            biography=details.biography,
+                                                            date_of_birth=details.birthday,
+                                                            ),
+                           parse_mode='HTML',
+                           reply_markup=markup
+                           )
     else:
         bot.send_message(chat_id=message.chat.id,
                          text=f'По запросу "{message.text}" ничего не найдено, введите заново имя и фамилию актёра или режиссёра.')
@@ -218,12 +229,12 @@ def handle_callback_query(call):
 
     elif command == 'next':
         users[chat_id]['current_discover_id'] += 1
-        bot.answer_callback_query(callback_query_id=call.id)
+        # bot.answer_callback_query(callback_query_id=call.id)
         send_current_movie(call=call)
 
     elif command == 'prev':
         users[chat_id]['current_discover_id'] -= 1
-        bot.answer_callback_query(callback_query_id=call.id)
+        # bot.answer_callback_query(callback_query_id=call.id)
         send_current_movie(call=call)
 
 
@@ -250,8 +261,12 @@ def send_first_movie(call):
     if users[chat_id]['discover']['total_results'] > 1:
         markup.add(next_button)
     markup.add(details_button)
+    if movie.poster_path is not None and movie.poster_path != '':
+        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
+    else:
+        movie_poster_url = tmdb.poster_na_url
     bot.send_photo(chat_id=message.chat.id,
-                   photo=tmdb.poster_w500_url + movie.poster_path,
+                   photo=movie_poster_url,
                    caption=views.cards.movie_short(
                        title=movie.title,
                        overview=movie.overview,
