@@ -26,7 +26,7 @@ prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
 next_button = InlineKeyboardButton("next", callback_data=f'next')
 
 amvera = os.getenv('AMVERA')
-if amvera == 1:
+if amvera is not None:
     API_TOKEN = os.environ['TELEGRAM_KEY']
 else:
     with open('secrets/telegram.key') as file:
