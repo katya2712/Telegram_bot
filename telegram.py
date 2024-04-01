@@ -25,7 +25,7 @@ users = {}
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
 next_button = InlineKeyboardButton("next", callback_data=f'next')
 
-amvera = os.environ['AMVERA']
+amvera = os.getenv('AMVERA')
 if amvera == 1:
     API_TOKEN = os.environ['TELEGRAM_KEY']
 else:

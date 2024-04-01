@@ -14,7 +14,7 @@ profile_na_url = 'https://placehold.co/421x632.png?text=N/A'
 
 
 def init():
-    amvera = os.environ['AMVERA']
+    amvera = os.getenv('AMVERA')
     if amvera == 1:
         tmdb_key = os.environ['TMDB_KEY']
     else:
