@@ -1,3 +1,5 @@
+import os
+
 import telebot
 import logging
 
@@ -23,9 +25,13 @@ users = {}
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
 next_button = InlineKeyboardButton("next", callback_data=f'next')
 
-with open('secrets/telegram.key') as file:
-    API_TOKEN = file.readline()
-    bot = telebot.TeleBot(API_TOKEN)
+amvera = os.environ['AMVERA']
+if amvera == 1:
+    API_TOKEN = os.environ['TELEGRAM_KEY']
+else:
+    with open('secrets/telegram.key') as file:
+        API_TOKEN = file.readline()
+        bot = telebot.TeleBot(API_TOKEN)
 
 
 def run():

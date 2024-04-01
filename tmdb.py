@@ -1,5 +1,6 @@
 from tmdbv3api import TMDb, Movie, Configuration, Genre, Search, Discover, Person
 from tmdbv3api.objs import person
+import os
 
 tmdb = TMDb()
 genres = []
@@ -13,8 +14,12 @@ profile_na_url = 'https://placehold.co/421x632.png?text=N/A'
 
 
 def init():
-    with open('secrets/tmdb.key') as file:
-        tmdb_key = file.readline()
+    amvera = os.environ['AMVERA']
+    if amvera == 1:
+        tmdb_key = os.environ['TMDB_KEY']
+    else:
+        with open('secrets/tmdb.key') as file:
+            tmdb_key = file.readline()
     tmdb.api_key = tmdb_key
     tmdb.language = 'ru'
     global genres
