@@ -10,6 +10,14 @@ from telebot.util import quick_markup
 import tmdb
 import views.cards
 
+if os.getenv('AMVERA') is not None:
+    API_TOKEN = os.environ['TELEGRAM_KEY']
+else:
+    with open('secrets/telegram.key') as file:
+        API_TOKEN = file.readline()
+
+bot = telebot.TeleBot(API_TOKEN)
+
 logger = telebot.logger
 telebot.logger.setLevel(logging.INFO)
 
@@ -24,14 +32,6 @@ users = {}
 
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
 next_button = InlineKeyboardButton("next", callback_data=f'next')
-
-amvera = os.getenv('AMVERA')
-if amvera is not None:
-    API_TOKEN = os.environ['TELEGRAM_KEY']
-else:
-    with open('secrets/telegram.key') as file:
-        API_TOKEN = file.readline()
-        bot = telebot.TeleBot(API_TOKEN)
 
 
 def run():

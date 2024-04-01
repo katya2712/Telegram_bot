@@ -1,6 +1,6 @@
-from tmdbv3api import TMDb, Movie, Configuration, Genre, Search, Discover, Person
-from tmdbv3api.objs import person
 import os
+
+from tmdbv3api import TMDb, Movie, Configuration, Genre, Search, Discover, Person
 
 tmdb = TMDb()
 genres = []
@@ -14,8 +14,7 @@ profile_na_url = 'https://placehold.co/421x632.png?text=N/A'
 
 
 def init():
-    amvera = os.getenv('AMVERA')
-    if amvera is not None:
+    if os.getenv('AMVERA') is not None:
         tmdb_key = os.environ['TMDB_KEY']
     else:
         with open('secrets/tmdb.key') as file:
