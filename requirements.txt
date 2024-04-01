@@ -1,2 +1,2 @@
 tmdbv3api~=1.9.0
-telebot~=0.0.5
+pyTelegramBotAPI~=4.16.1
