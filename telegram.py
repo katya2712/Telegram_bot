@@ -79,7 +79,6 @@ def send_popular(chat_id):
                        photo=tmdb.poster_w500_url + p.poster_path,
                        caption=views.cards.movie_short(
                            title=p.title,
-                           overview=p.overview,
                            release_date=p.release_date[:4],
                            vote_average=p.vote_average),
                        parse_mode='HTML',
@@ -126,7 +125,6 @@ def send_person_handler(message):
     # Выполняется если не обнаружена другая команда
     persons = tmdb.person_search(message.text)
     if persons.total_results > 0:
-        # text = ''
         for person in persons:
             if person.profile_path is not None and person.profile_path != '':
                 person_profile_picture = str(tmdb.profile_h632_url + person.profile_path)
@@ -136,18 +134,14 @@ def send_person_handler(message):
             markup = InlineKeyboardMarkup()
             select_button = InlineKeyboardButton("Выбрать", callback_data=f'select_person {person.id}')
             markup.add(select_button)
+            films = ', '.join([film.title for film in person.known_for])
             text = views.cards.person_short(name=person.name,
-                                            biography=details.biography,
                                             date_of_birth=details.birthday,
+                                            films=films
                                             )
-            print(text)
-            print(person_profile_picture)
             bot.send_photo(chat_id=message.chat.id,
                            photo=person_profile_picture,
-                           caption=views.cards.person_short(name=person.name,
-                                                            biography=details.biography,
-                                                            date_of_birth=details.birthday,
-                                                            ),
+                           caption=text,
                            parse_mode='HTML',
                            reply_markup=markup
                            )
@@ -275,7 +269,6 @@ def send_first_movie(call):
                    photo=movie_poster_url,
                    caption=views.cards.movie_short(
                        title=movie.title,
-                       overview=movie.overview,
                        release_date=movie.release_date[:4],
                        vote_average=movie.vote_average),
                    parse_mode='HTML',
@@ -286,7 +279,6 @@ def send_first_movie(call):
 def send_current_movie(call):
     """Редактирование сообщения для показа другого фильма из поиска"""
     chat_id = call.message.chat.id
-    # movie_count = len(users[chat_id]['discover'])
     movie = users[chat_id]['discover'][users[chat_id]['current_discover_id']]
     message = call.message
     buttons = {'prev': {'callback_data': 'prev'},
@@ -298,7 +290,6 @@ def send_current_movie(call):
     media = InputMediaPhoto(tmdb.poster_w500_url + movie.poster_path,
                             caption=views.cards.movie_short(
                                 title=movie.title,
-                                overview=movie.overview,
                                 release_date=movie.release_date[:4],
                                 vote_average=movie.vote_average),
                             parse_mode='HTML')

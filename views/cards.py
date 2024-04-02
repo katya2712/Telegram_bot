@@ -8,16 +8,13 @@ def movie_full(title, genres: list, overview, release_date, length, vote_average
 <b>Оценка:</b> {vote_average}'''
 
 
-def movie_short(title, overview, release_date, vote_average):
+def movie_short(title, release_date, vote_average):
     return f'''<b>Название:</b> {title}
-<b>Описание:</b>
-<i>{overview}</i>
 <b>Год выхода:</b> {release_date} 
 <b>Оценка:</b> {vote_average}'''
 
 
-def person_short(name, biography, date_of_birth):
+def person_short(name, date_of_birth, films):
     return f'''<b>Имя:</b> {name}
-<b>Биография:</b>
-<i>{biography}</i>
-<b>Год рождения:</b> {date_of_birth}'''
+<b>Год рождения:</b> {date_of_birth}
+<i>{films}</i>'''
