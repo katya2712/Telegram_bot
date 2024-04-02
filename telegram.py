@@ -191,63 +191,6 @@ def echo_message(message):
 # ----- Обработчики колбэков из кнопок -----
 
 # TODO воспользоваться возможностями лямбда функции декоратора
-@bot.callback_query_handler(func=lambda call: True)
-def handle_popular_query(call):
-    chat_id = call.message.chat.id
-    cmd = call.data.split()
-    command = cmd[0]
-    args = ' '.join(cmd[1:])
-    if command == 'details':
-        popular = tmdb.movie_details(args)
-        genres = [genres['name'] for genres in popular.genres]
-        bot.edit_message_caption(
-            caption=views.cards.movie_full(
-                title=popular.title,
-                overview=popular.overview,
-                release_date=popular.release_date[:4],
-                vote_average=popular.vote_average,
-                length=popular.runtime,
-                genres=genres),
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            parse_mode='HTML')
-    if command == 'details_from_discover':
-        popular = tmdb.movie_details(args)
-        movie_count = len(users[chat_id]['discover'])
-        genres = [genres['name'] for genres in popular.genres]
-        markup = InlineKeyboardMarkup()
-
-        # добавляем кнопку "предыдущий", если фильм не первый
-        if users[chat_id]['current_discover_id'] > 0:
-            markup.add(prev_button)
-
-        # добавляем кнопку "следующий", если фильм не последний
-        if users[chat_id]['current_discover_id'] < movie_count - 1:
-            markup.add(next_button)
-
-        bot.edit_message_caption(
-            caption=views.cards.movie_full(
-                title=popular.title,
-                overview=popular.overview,
-                release_date=popular.release_date[:4],
-                vote_average=popular.vote_average,
-                length=popular.runtime,
-                genres=genres),
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            parse_mode='HTML',
-            reply_markup=markup)
-
-    elif command == 'next':
-        users[chat_id]['current_discover_id'] += 1
-        # bot.answer_callback_query(callback_query_id=call.id)
-        send_current_movie(call=call)
-
-    elif command == 'prev':
-        users[chat_id]['current_discover_id'] -= 1
-        # bot.answer_callback_query(callback_query_id=call.id)
-        send_current_movie(call=call)
-
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback_query(call):
