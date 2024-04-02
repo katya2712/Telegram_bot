@@ -9,6 +9,7 @@ from telebot.util import quick_markup
 
 import tmdb
 import views.cards
+import config
 
 if os.getenv('RELEASE') is not None:
     API_TOKEN = os.environ['TELEGRAM_KEY']
@@ -66,6 +67,20 @@ def send_help_handler(message):
     send_help(message.chat.id)
 
 
+# Вызов помощи из клавиатуры
+@bot.message_handler(func=lambda message: message.text == '\U0001F198Помощь')
+def help_handler(message):
+    send_help(message.chat.id)
+
+
+@bot.message_handler(commands=['version', 'версия'])
+def send_version_handler(message):
+    chat_id = message.chat.id
+    version = config.version
+    bot.send_message(chat_id=chat_id,
+                     text=version)
+
+
 @bot.message_handler(commands=['popular', 'популярные'])
 def send_popular(chat_id):
     """Список популярных фильмов на сегодня"""
@@ -87,12 +102,6 @@ def send_popular(chat_id):
                        )
 
 
-# Вызов помощи из клавиатуры
-@bot.message_handler(func=lambda message: message.text == '\U0001F198Помощь')
-def help_handler(message):
-    send_help(message.chat.id)
-
-
 # Поиск фильмов
 @bot.message_handler(func=lambda message: message.text == '\U0001F3A5Фильм')
 def send_genres_handler(message):
@@ -109,7 +118,7 @@ def send_genres_handler(message):
         buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
     markup = quick_markup(buttons, row_width=3)
     bot.send_message(chat_id=chat_id,
-                     text=f'<b>Выберите жанр:</b>',
+                     text='<b>Выберите жанр:</b>',
                      parse_mode='HTML',
                      reply_markup=markup)
 
