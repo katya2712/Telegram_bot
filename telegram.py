@@ -49,10 +49,9 @@ def start(message):
     users[chat_id] = {}
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = KeyboardButton('\U0001F3A5Фильм')
-    item2 = KeyboardButton('\U0001F3ACСериал')
-    item3 = KeyboardButton('\U0001F51DТоп фильмов')
-    item4 = KeyboardButton('\U0001F198Помощь')
-    markup.add(item1, item2, item3, item4)
+    item2 = KeyboardButton('\U0001F51DТоп фильмов')
+    item5 = KeyboardButton('\U0001F198Помощь')
+    markup.add(item1, item2, item5)
     bot.send_message(message.chat.id,
                      f'''Привет,{message.from_user.first_name}!\U0001F44B
 Рады видеть тебя в нашем боте. Не будем долго болтать и приступим к выбору занятия на вечер!
@@ -123,26 +122,6 @@ def send_genres_handler(message):
                      reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == '\U0001F3ACСериал')
-def send_tv_handler(message):
-    """Отправляет пользователю список доступных жанров сериалов"""
-    chat_id = message.chat.id
-    # создаем словарь для каждого пользователя
-    users[chat_id] = {}
-    users[chat_id]['discover'] = []
-    users[chat_id]['genre_id'] = ''
-    users[chat_id]['current_discover_id'] = 0
-
-    buttons = {}
-    for genre in tmdb.genres:
-        buttons[genre.name] = {'callback_data': f'genre_id {genre.id} {genre.name}'}
-    markup = quick_markup(buttons, row_width=3)
-    bot.send_message(chat_id=chat_id,
-                     text=f'<b>Выберите жанр:</b>',
-                     parse_mode='HTML',
-                     reply_markup=markup)
-
-
 # Список популярных фильмов
 @bot.message_handler(func=lambda message: message.text == '\U0001F51DТоп фильмов')
 def send_popular_handler(message):
@@ -184,7 +163,7 @@ def send_person_handler(message):
 @bot.message_handler(func=lambda message: True)
 def echo_message(message):
     # TODO доделать обработчик неизвестных команд (или убрать)
-    text = f'Неизвестная команда. "{message.text}"'
+    text = f'Неизвестная команда "{message.text}"'
     bot.reply_to(message=message, text=text)
 
 
@@ -247,7 +226,7 @@ def handle_callback_query(call):
         bot.answer_callback_query(callback_query_id=call.id)
         bot.edit_message_text(chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              text=f'Выбран жанр {genre_name}.\n Напишите имя актёра или режиссёра.')
+                              text=f'Выбран жанр {genre_name}\n.Напишите имя актёра или режиссёра')
 
     elif command == 'select_person':
         users[chat_id]['discover'] = tmdb.discover(genre_id=users[chat_id]['genre_id'], people_id=args)
