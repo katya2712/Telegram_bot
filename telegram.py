@@ -169,8 +169,6 @@ def echo_message(message):
 
 # ----- Обработчики колбэков из кнопок -----
 
-# TODO воспользоваться возможностями лямбда функции декоратора
-
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callback_query(call):
     chat_id = call.message.chat.id
@@ -195,15 +193,15 @@ def handle_callback_query(call):
         movie = tmdb.movie_details(args)
         movie_count = len(users[chat_id]['discover'])
         genres = [genres['name'] for genres in movie.genres]
-        markup = InlineKeyboardMarkup()
 
+        buttons = {}
         # добавляем кнопку "предыдущий", если фильм не первый
         if users[chat_id]['current_discover_id'] > 0:
-            markup.add(prev_button)
-
+            buttons['prev'] = {'callback_data': 'prev'}
         # добавляем кнопку "следующий", если фильм не последний
         if users[chat_id]['current_discover_id'] < movie_count - 1:
-            markup.add(next_button)
+            buttons['next'] = {'callback_data': 'next'}
+        markup = quick_markup(buttons)
 
         bot.edit_message_caption(
             caption=views.cards.movie_full(
@@ -290,14 +288,26 @@ def send_current_movie(call):
     """Редактирование сообщения для показа другого фильма из поиска"""
     chat_id = call.message.chat.id
     movie = users[chat_id]['discover'][users[chat_id]['current_discover_id']]
+    movie_count = len(users[chat_id]['discover'])
     message = call.message
-    buttons = {'prev': {'callback_data': 'prev'},
-               'next': {'callback_data': 'next'}}
+
+    buttons = {}
+    # добавляем кнопку "предыдущий", если фильм не первый
+    if users[chat_id]['current_discover_id'] > 0:
+        buttons['prev'] = {'callback_data': 'prev'}
+    # добавляем кнопку "следующий", если фильм не последний
+    if users[chat_id]['current_discover_id'] < movie_count - 1:
+        buttons['next'] = {'callback_data': 'next'}
     markup = quick_markup(buttons)
 
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
     markup.add(details_button)
-    media = InputMediaPhoto(tmdb.poster_w500_url + movie.poster_path,
+
+    if movie.poster_path is not None and movie.poster_path != '':
+        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
+    else:
+        movie_poster_url = tmdb.poster_na_url
+    media = InputMediaPhoto(movie_poster_url,
                             caption=views.cards.movie_short(
                                 title=movie.title,
                                 release_date=movie.release_date[:4],
