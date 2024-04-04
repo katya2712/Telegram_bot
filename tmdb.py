@@ -12,6 +12,9 @@ profile_h632_url = ''
 poster_na_url = 'https://placehold.co/500x700.png?text=N/A'
 profile_na_url = 'https://placehold.co/421x632.png?text=N/A'
 
+# id жанра мультфильмы - 16
+id_mult = 16
+
 
 def init():
     if os.getenv('RELEASE') is not None:
@@ -73,6 +76,8 @@ def discover(genre_id, people_id):
     movies = Discover().discover_movies({
         'with_genres': genre_id,
         'with_people': people_id,
+        # без мультфильмов
+        'without_genres': id_mult,
         'sort_by': 'popularity.desc'
     })
     return movies

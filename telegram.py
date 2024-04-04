@@ -219,7 +219,6 @@ def handle_callback_query(call):
     elif command == 'genre_id':
         args = args.split()
         users[chat_id]['genre_id'] = args[0]
-        # variables.genre_id = args[0]
         genre_name = ' '.join(args[1:])
         bot.answer_callback_query(callback_query_id=call.id)
         bot.edit_message_text(chat_id=call.message.chat.id,
@@ -227,7 +226,9 @@ def handle_callback_query(call):
                               text=f'Выбран жанр {genre_name}\n.Напишите имя актёра или режиссёра')
 
     elif command == 'select_person':
-        users[chat_id]['discover'] = tmdb.discover(genre_id=users[chat_id]['genre_id'], people_id=args)
+        users[chat_id]['discover'] = tmdb.discover(genre_id=users[chat_id]['genre_id'],
+                                                   people_id=args,
+                                                   )
         bot.answer_callback_query(callback_query_id=call.id)
         if users[chat_id]['discover']['total_results'] > 0:
             send_first_movie(call=call)
