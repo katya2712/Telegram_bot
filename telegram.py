@@ -29,6 +29,14 @@ telebot.logger.setLevel(logging.INFO)
 # 	'genre_id': '',
 # 	'current_discover_id': 0
 # 	}
+
+# ### Структура хранения состояния поиска для каждого пользователя
+# {
+# chat_id: {
+# 	'popular': [],
+# 	'genre_id': '',
+# 	'current_popular_id': 0
+# 	}
 users = {}
 
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
@@ -330,8 +338,78 @@ def send_current_movie(call):
                            )
 
 
+def send_first_popular(call):
+    """Отправка первого сообщения с результатом поиска фильмов"""
+    chat_id = call.message.chat.id
+    users[chat_id]['current_popular_id'] = 0
+    movie = users[chat_id]['popular'][0]
+    message = call.message
+    markup = InlineKeyboardMarkup()
+
+    details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_popular {movie.id}')
+    if users[chat_id]['popular']['total_results'] > 1:
+        markup.add(next_button)
+    markup.add(details_button)
+    if movie.poster_path is not None and movie.poster_path != '':
+        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
+    else:
+        movie_poster_url = tmdb.poster_na_url
+    bot.send_photo(chat_id=message.chat.id,
+                   photo=movie_poster_url,
+                   caption=views.cards.movie_short(
+                       title=movie.title,
+                       release_date=movie.release_date[:4],
+                       vote_average=movie.vote_average),
+                   parse_mode='HTML',
+                   reply_markup=markup
+                   )
+
+
+def send_current_popular(call):
+    """Редактирование сообщения для показа другого фильма из поиска"""
+    chat_id = call.message.chat.id
+    movie = users[chat_id]['popular'][users[chat_id]['current_popular_id']]
+    movie_count = len(users[chat_id]['popular'])
+    message = call.message
+
+    buttons = {}
+    # добавляем кнопку "предыдущий", если фильм не первый
+    if users[chat_id]['current_popular_id'] > 0:
+        buttons['prev'] = {'callback_data': 'prev'}
+    # добавляем кнопку "следующий", если фильм не последний
+    if users[chat_id]['current_popular_id'] < movie_count - 1:
+        buttons['next'] = {'callback_data': 'next'}
+    markup = quick_markup(buttons)
+
+    details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_popular {movie.id}')
+    markup.add(details_button)
+
+    if movie.poster_path is not None and movie.poster_path != '':
+        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
+    else:
+        movie_poster_url = tmdb.poster_na_url
+    media = InputMediaPhoto(movie_poster_url,
+                            caption=views.cards.movie_short(
+                                title=movie.title,
+                                release_date=movie.release_date[:4],
+                                vote_average=movie.vote_average),
+                            parse_mode='HTML')
+    bot.edit_message_media(chat_id=message.chat.id,
+                           message_id=message.id,
+                           media=media,
+                           reply_markup=markup
+                           )
+
+
 def clear_user_state(chat_id):
     users[chat_id] = {}
     users[chat_id]['discover'] = []
     users[chat_id]['genre_id'] = ''
     users[chat_id]['current_discover_id'] = 0
+
+
+def clear_popular_user_state(chat_id):
+    users[chat_id] = {}
+    users[chat_id]['popular'] = []
+    users[chat_id]['genre_id'] = ''
+    users[chat_id]['current_popular_id'] = 0
