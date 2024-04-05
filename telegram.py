@@ -50,7 +50,7 @@ def start(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = KeyboardButton('\U0001F3A5Фильм')
     # TODO добавить иконку
-    item2 = KeyboardButton('Мультфильм')
+    item2 = KeyboardButton('\U0001F36DМультфильм')
     item3 = KeyboardButton('\U0001F51DТоп фильмов')
     item5 = KeyboardButton('\U0001F198Помощь')
     markup.add(item1, item2, item3, item5)
@@ -121,14 +121,14 @@ def send_genres_handler(message):
                      reply_markup=markup)
 
 
-@bot.message_handler(func=lambda message: message.text == 'Мультфильм')
+@bot.message_handler(func=lambda message: message.text == '\U0001F36DМультфильм')
 def send_mult_handler(message):
     chat_id = message.chat.id
     # создаем словарь для каждого пользователя
     clear_user_state(chat_id)
     users[chat_id]['genre_id'] = tmdb.mult_id
     bot.send_message(chat_id=chat_id,
-                     text=f'Ищем мультфильмы.\nНапишите имя актёра озвучивания или режиссёра')
+                     text=f'Ищем мультфильмы.\nНапишите имя актёра озвучивания или режиссёра.')
 
 
 # Список популярных фильмов
@@ -254,8 +254,8 @@ def handle_callback_query(call):
         # bot.answer_callback_query(callback_query_id=call.id)
         send_current_movie(call=call)
 
-
 # ----- Вспомогательные функции -----
+
 
 def send_help(chat_id):
     bot.send_message(chat_id=chat_id,
@@ -321,6 +321,69 @@ def send_current_movie(call):
                                 title=movie.title,
                                 release_date=movie.release_date[:4],
                                 vote_average=movie.vote_average),
+                            parse_mode='HTML')
+    bot.edit_message_media(chat_id=message.chat.id,
+                           message_id=message.id,
+                           media=media,
+                           reply_markup=markup
+                           )
+
+
+def send_first_mult(call):
+    """Отправка первого сообщения с результатом поиска фильмов"""
+    chat_id = call.message.chat.id
+    users[chat_id]['current_discover_id'] = 0
+    mult = users[chat_id]['discover'][0]
+    message = call.message
+    markup = InlineKeyboardMarkup()
+
+    details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {mult.id}')
+    if users[chat_id]['discover']['total_results'] > 1:
+        markup.add(next_button)
+    markup.add(details_button)
+    if mult.poster_path is not None and mult.poster_path != '':
+        mult_poster_url = str(tmdb.poster_w500_url + mult.poster_path)
+    else:
+        mult_poster_url = tmdb.poster_na_url
+    bot.send_photo(chat_id=message.chat.id,
+                   photo=mult_poster_url,
+                   caption=views.cards.movie_short(
+                       title=mult.title,
+                       release_date=mult.release_date[:4],
+                       vote_average=mult.vote_average),
+                   parse_mode='HTML',
+                   reply_markup=markup
+                   )
+
+
+def send_current_mult(call):
+    """Редактирование сообщения для показа другого фильма из поиска"""
+    chat_id = call.message.chat.id
+    mult = users[chat_id]['discover'][users[chat_id]['current_discover_id']]
+    mult_count = len(users[chat_id]['discover'])
+    message = call.message
+
+    buttons = {}
+    # добавляем кнопку "предыдущий", если фильм не первый
+    if users[chat_id]['current_discover_id'] > 0:
+        buttons['prev'] = {'callback_data': 'prev'}
+    # добавляем кнопку "следующий", если фильм не последний
+    if users[chat_id]['current_discover_id'] < mult_count - 1:
+        buttons['next'] = {'callback_data': 'next'}
+    markup = quick_markup(buttons)
+
+    details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {mult.id}')
+    markup.add(details_button)
+
+    if mult.poster_path is not None and mult.poster_path != '':
+        mult_poster_url = str(tmdb.poster_w500_url + mult.poster_path)
+    else:
+        mult_poster_url = tmdb.poster_na_url
+    media = InputMediaPhoto(mult_poster_url,
+                            caption=views.cards.movie_short(
+                                title=mult.title,
+                                release_date=mult.release_date[:4],
+                                vote_average=mult.vote_average),
                             parse_mode='HTML')
     bot.edit_message_media(chat_id=message.chat.id,
                            message_id=message.id,
