@@ -26,17 +26,12 @@ telebot.logger.setLevel(logging.INFO)
 # {
 # chat_id: {
 # 	'discover': [],
+#   'popular': [],
 # 	'genre_id': '',
 # 	'current_discover_id': 0
+#   'current_popular_id': 0
 # 	}
 
-# ### Структура хранения состояния поиска для каждого пользователя
-# {
-# chat_id: {
-# 	'popular': [],
-# 	'genre_id': '',
-# 	'current_popular_id': 0
-# 	}
 users = {}
 
 prev_button = InlineKeyboardButton("prev", callback_data=f'prev')
@@ -57,7 +52,6 @@ def start(message):
     users[chat_id] = {}
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = KeyboardButton('\U0001F3A5Фильм')
-    # TODO добавить иконку
     item2 = KeyboardButton('\U0001F36DМультфильм')
     item3 = KeyboardButton('\U0001F51DТоп фильмов')
     item5 = KeyboardButton('\U0001F198Помощь')
@@ -91,24 +85,14 @@ def send_version_handler(message):
 
 
 @bot.message_handler(commands=['popular', 'популярные'])
-def send_popular(chat_id):
+def send_popular(message):
     """Список популярных фильмов на сегодня"""
-    popular = tmdb.popular()
+    chat_id = message.chat.id
+    # создаем словарь для каждого пользователя
+    clear_user_state(chat_id)
 
-    # TODO Выводить список в одном сообщении по аналогии с результатами поиска
-    for p in popular:
-        markup = InlineKeyboardMarkup()
-        details_button = InlineKeyboardButton("Подробнее", callback_data=f'details {p.id}')
-        markup.add(details_button)
-        bot.send_photo(chat_id=chat_id,
-                       photo=tmdb.poster_w500_url + p.poster_path,
-                       caption=views.cards.movie_short(
-                           title=p.title,
-                           release_date=p.release_date[:4],
-                           vote_average=p.vote_average),
-                       parse_mode='HTML',
-                       reply_markup=markup
-                       )
+    users[chat_id]['popular'] = tmdb.popular()
+    send_first_popular(message=message)
 
 
 # Поиск фильмов
@@ -142,7 +126,7 @@ def send_mult_handler(message):
 # Список популярных фильмов
 @bot.message_handler(func=lambda message: message.text == '\U0001F51DТоп фильмов')
 def send_popular_handler(message):
-    send_popular(message.chat.id)
+    send_popular(message)
 
 
 @bot.message_handler(func=lambda message: users[message.chat.id]['genre_id'] != '')
@@ -232,6 +216,33 @@ def handle_callback_query(call):
             parse_mode='HTML',
             reply_markup=markup)
 
+    if command == 'details_from_popular':
+        movie = tmdb.movie_details(args)
+        movie_count = len(users[chat_id]['popular'])
+        genres = [genres['name'] for genres in movie.genres]
+
+        buttons = {}
+        # добавляем кнопку "предыдущий", если фильм не первый
+        if users[chat_id]['current_popular_id'] > 0:
+            buttons['prev'] = {'callback_data': 'prev'}
+        # добавляем кнопку "следующий", если фильм не последний
+        if users[chat_id]['current_popular_id'] < movie_count - 1:
+            buttons['next'] = {'callback_data': 'next'}
+        markup = quick_markup(buttons)
+
+        bot.edit_message_caption(
+            caption=views.cards.movie_full(
+                title=movie.title,
+                overview=movie.overview,
+                release_date=movie.release_date[:4],
+                vote_average=movie.vote_average,
+                length=movie.runtime,
+                genres=genres),
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            parse_mode='HTML',
+            reply_markup=markup)
+
     elif command == 'genre_id':
         args = args.split()
         users[chat_id]['genre_id'] = args[0]
@@ -253,14 +264,23 @@ def handle_callback_query(call):
                              text='По вашему запросу ничего не найдено. Пожалуйста, повторите поиск.')
 
     elif command == 'next':
-        users[chat_id]['current_discover_id'] += 1
-        # bot.answer_callback_query(callback_query_id=call.id)
-        send_current_movie(call=call)
+        # если не пуст список поиска
+        if users[chat_id]['discover']:
+            users[chat_id]['current_discover_id'] += 1
+            send_current_movie(call=call)
+        # если не пуст список популярных
+        elif users[chat_id]['popular']:
+            users[chat_id]['current_popular_id'] += 1
+            send_current_popular(call=call)
 
     elif command == 'prev':
-        users[chat_id]['current_discover_id'] -= 1
-        # bot.answer_callback_query(callback_query_id=call.id)
-        send_current_movie(call=call)
+        # если не пуст список поиска
+        if users[chat_id]['discover']:
+            users[chat_id]['current_discover_id'] -= 1
+            send_current_movie(call=call)
+        elif users[chat_id]['popular']:
+            users[chat_id]['current_popular_id'] -= 1
+            send_current_popular(call=call)
 
 
 # ----- Вспомогательные функции -----
@@ -338,17 +358,15 @@ def send_current_movie(call):
                            )
 
 
-def send_first_popular(call):
-    """Отправка первого сообщения с результатом поиска фильмов"""
-    chat_id = call.message.chat.id
+def send_first_popular(message):
+    """Отправка первого сообщения с результатом популярных фильмов"""
+    chat_id = message.chat.id
     users[chat_id]['current_popular_id'] = 0
     movie = users[chat_id]['popular'][0]
-    message = call.message
     markup = InlineKeyboardMarkup()
 
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_popular {movie.id}')
-    if users[chat_id]['popular']['total_results'] > 1:
-        markup.add(next_button)
+    markup.add(next_button)
     markup.add(details_button)
     if movie.poster_path is not None and movie.poster_path != '':
         movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
@@ -366,7 +384,7 @@ def send_first_popular(call):
 
 
 def send_current_popular(call):
-    """Редактирование сообщения для показа другого фильма из поиска"""
+    """Редактирование сообщения для показа другого фильма из списка популярных"""
     chat_id = call.message.chat.id
     movie = users[chat_id]['popular'][users[chat_id]['current_popular_id']]
     movie_count = len(users[chat_id]['popular'])
@@ -404,12 +422,7 @@ def send_current_popular(call):
 def clear_user_state(chat_id):
     users[chat_id] = {}
     users[chat_id]['discover'] = []
-    users[chat_id]['genre_id'] = ''
-    users[chat_id]['current_discover_id'] = 0
-
-
-def clear_popular_user_state(chat_id):
-    users[chat_id] = {}
     users[chat_id]['popular'] = []
     users[chat_id]['genre_id'] = ''
+    users[chat_id]['current_discover_id'] = 0
     users[chat_id]['current_popular_id'] = 0
