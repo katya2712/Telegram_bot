@@ -129,7 +129,7 @@ def send_popular_handler(message):
     send_popular(message)
 
 
-@bot.message_handler(func=lambda message: users[message.chat.id]['genre_id'] != '')
+@bot.message_handler(func=lambda message: message.chat.id in users and users[message.chat.id]['genre_id'] != '')
 def send_person_handler(message):
     # Если выбран жанр, любое текстовое сообщение трактуем как поиск персоны (актера или режиссёра)
     # Выполняется если не обнаружена другая команда
@@ -144,7 +144,7 @@ def send_person_handler(message):
             markup = InlineKeyboardMarkup()
             select_button = InlineKeyboardButton("Выбрать", callback_data=f'select_person {person.id}')
             markup.add(select_button)
-            films = ', '.join([film.title for film in person.known_for])
+            films = ', '.join([film.title for film in person.known_for if hasattr(film, 'title')])
             text = views.cards.person_short(name=person.name,
                                             date_of_birth=details.birthday,
                                             films=films
