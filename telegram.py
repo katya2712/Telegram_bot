@@ -7,6 +7,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
     InputMediaPhoto
 from telebot.util import quick_markup
 
+import chat
 import tmdb
 import views.cards
 import config
@@ -30,6 +31,7 @@ telebot.logger.setLevel(logging.INFO)
 # 	'genre_id': '',
 # 	'current_discover_id': 0
 #   'current_popular_id': 0
+#   'messages': []
 # 	}
 
 users = {}
@@ -49,7 +51,8 @@ def run():
 def start(message):
     chat_id = message.chat.id
     global users
-    users[chat_id] = {}
+    # создаем словарь для каждого пользователя
+    clear_user_state(chat_id, clear_messages=True)
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = KeyboardButton('\U0001F3A5Фильм')
     item2 = KeyboardButton('\U0001F36DМультфильм')
@@ -160,11 +163,23 @@ def send_person_handler(message):
                          text=f'По запросу "{message.text}" ничего не найдено, введите заново имя и фамилию актёра или режиссёра.')
 
 
-# Обработчик всех других неизвестных текстовых команд
-@bot.message_handler(func=lambda message: True)
-def echo_message(message):
-    text = f'Неизвестная команда "{message.text}"'
-    bot.reply_to(message=message, text=text)
+# Общение с groqAI
+@bot.message_handler(content_types=['text'])
+def get_text_messages(message):
+    chat_id = message.chat.id
+    if chat_id not in users or 'messages' not in users[chat_id]:
+        clear_user_state(chat_id, clear_messages=True)
+    users[chat_id]['messages'].append({"role": 'user', "content": message.text})
+    response = chat.get_response(users[chat_id]['messages'])
+    bot.send_message(chat_id=chat_id,
+                     text=response.choices[0].message.content,
+                     parse_mode='Markdown')
+    users[chat_id]['messages'].append({"role": 'assistant', "content": response.choices[0].message.content})
+
+# @bot.message_handler(func=lambda message: True)
+# def echo_message(message):
+#     text = f'Неизвестная команда "{message.text}"'
+#     bot.reply_to(message=message, text=text)
 
 
 # ----- Обработчики колбэков из кнопок -----
@@ -419,10 +434,12 @@ def send_current_popular(call):
                            )
 
 
-def clear_user_state(chat_id):
+def clear_user_state(chat_id, clear_messages=False):
     users[chat_id] = {}
     users[chat_id]['discover'] = []
     users[chat_id]['popular'] = []
     users[chat_id]['genre_id'] = ''
     users[chat_id]['current_discover_id'] = 0
     users[chat_id]['current_popular_id'] = 0
+    if clear_messages:
+        users[chat_id]['messages'] = []
