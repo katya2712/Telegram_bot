@@ -39,7 +39,7 @@ def info():
 
 
 def movie_search(arg):
-    print(f'Кино с названием {arg}')
+    return Search().movies(term=arg)
 
 
 def tv_search(arg):

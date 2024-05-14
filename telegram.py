@@ -98,6 +98,31 @@ def send_popular(message):
     send_first_popular(message=message)
 
 
+# Поиск фильмов по названию
+@bot.message_handler(commands=['кино', 'movie'])
+def search_movie(message):
+    print(message)
+    args = ' '.join(message.text.split()[1:])
+    movies = tmdb.movie_search(args)
+    if movies.total_results > 0:
+        for movie in movies:
+            print(movie)
+            movie_poster_url = get_movie_poster_url(movie)
+            bot.send_photo(chat_id=message.chat.id,
+                           photo=movie_poster_url,
+                           caption=views.cards.movie_short(
+                               title=movie.title,
+                               release_date=movie.release_date[:4],
+                               vote_average=movie.vote_average),
+                           parse_mode='HTML'
+                           # reply_markup=markup
+                           )
+    else:
+        bot.send_message(
+            chat_id=message.chat.id,
+            text=f'По запросу "{message.text}" ничего не найдено.')
+
+
 # Поиск фильмов
 @bot.message_handler(func=lambda message: message.text == '\U0001F3A5Фильм')
 def send_genres_handler(message):
@@ -175,6 +200,7 @@ def get_text_messages(message):
                      text=response.choices[0].message.content,
                      parse_mode='Markdown')
     users[chat_id]['messages'].append({"role": 'assistant', "content": response.choices[0].message.content})
+
 
 # @bot.message_handler(func=lambda message: True)
 # def echo_message(message):
@@ -322,10 +348,7 @@ def send_first_movie(call):
     if users[chat_id]['discover']['total_results'] > 1:
         markup.add(next_button)
     markup.add(details_button)
-    if movie.poster_path is not None and movie.poster_path != '':
-        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
-    else:
-        movie_poster_url = tmdb.poster_na_url
+    movie_poster_url = get_movie_poster_url(movie)
     bot.send_photo(chat_id=message.chat.id,
                    photo=movie_poster_url,
                    caption=views.cards.movie_short(
@@ -356,10 +379,7 @@ def send_current_movie(call):
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_discover {movie.id}')
     markup.add(details_button)
 
-    if movie.poster_path is not None and movie.poster_path != '':
-        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
-    else:
-        movie_poster_url = tmdb.poster_na_url
+    movie_poster_url = get_movie_poster_url(movie)
     media = InputMediaPhoto(movie_poster_url,
                             caption=views.cards.movie_short(
                                 title=movie.title,
@@ -383,10 +403,7 @@ def send_first_popular(message):
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_popular {movie.id}')
     markup.add(next_button)
     markup.add(details_button)
-    if movie.poster_path is not None and movie.poster_path != '':
-        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
-    else:
-        movie_poster_url = tmdb.poster_na_url
+    movie_poster_url = get_movie_poster_url(movie)
     bot.send_photo(chat_id=message.chat.id,
                    photo=movie_poster_url,
                    caption=views.cards.movie_short(
@@ -417,10 +434,7 @@ def send_current_popular(call):
     details_button = InlineKeyboardButton("Подробнее", callback_data=f'details_from_popular {movie.id}')
     markup.add(details_button)
 
-    if movie.poster_path is not None and movie.poster_path != '':
-        movie_poster_url = str(tmdb.poster_w500_url + movie.poster_path)
-    else:
-        movie_poster_url = tmdb.poster_na_url
+    movie_poster_url = get_movie_poster_url(movie)
     media = InputMediaPhoto(movie_poster_url,
                             caption=views.cards.movie_short(
                                 title=movie.title,
@@ -432,6 +446,14 @@ def send_current_popular(call):
                            media=media,
                            reply_markup=markup
                            )
+
+
+def get_movie_poster_url(movie):
+    print(movie)
+    if movie.poster_path is not None and movie.poster_path != '':
+        return str(tmdb.poster_w500_url + movie.poster_path)
+    else:
+        return tmdb.poster_na_url
 
 
 def clear_user_state(chat_id, clear_messages=False):
