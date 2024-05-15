@@ -195,11 +195,11 @@ def get_text_messages(message):
     if chat_id not in users or 'messages' not in users[chat_id]:
         clear_user_state(chat_id, clear_messages=True)
     users[chat_id]['messages'].append({"role": 'user', "content": message.text})
-    response = chat.get_response(users[chat_id]['messages'])
+    context = chat.get_response(users[chat_id]['messages'])
     bot.send_message(chat_id=chat_id,
-                     text=response.choices[0].message.content,
+                     text=context[-1]['content'],
                      parse_mode='Markdown')
-    users[chat_id]['messages'].append({"role": 'assistant', "content": response.choices[0].message.content})
+    users[chat_id]['messages'] = context
 
 
 # @bot.message_handler(func=lambda message: True)
